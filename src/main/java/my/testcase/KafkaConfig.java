@@ -25,14 +25,19 @@ import java.util.Properties;
 import static org.apache.kafka.common.requests.IsolationLevel.READ_COMMITTED;
 import static org.apache.kafka.streams.StreamsConfig.EXACTLY_ONCE;
 
-@Slf4j
-@Configuration
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+//@Slf4j
+//@Configuration
+//@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-    private final Tracing tracing;
+    //@Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers = "localhost:19092";
+    private final Tracing tracing = Tracing.newBuilder().localServiceName("test").build();
+
+  public static void main(String[] args) {
+    KafkaConfig kafkaConfig = new KafkaConfig();
+    kafkaConfig.init();
+  }
 
     @PostConstruct
     void init() {
@@ -57,7 +62,11 @@ public class KafkaConfig {
                     @Override
                     public byte[] transform(byte[] value) {
                         // throws IllegalStateException
-                        context.headers();
+                        try {
+                          context.headers();
+                        }catch (Exception e) {
+                          e.printStackTrace();
+                        }
                         return null;
                     }
 
@@ -71,15 +80,15 @@ public class KafkaConfig {
 
     Properties kStreamsConfig() {
         Map<String, Object> props = new HashMap<>();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-test-case");
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-test-case-1");
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.ByteArray().getClass().getName());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(StreamsConfig.CLIENT_ID_CONFIG, "streams-test-case");
-        props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, EXACTLY_ONCE);
-        props.put(ProducerConfig.ACKS_CONFIG, "all");
-        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "streams-test-case");
-        props.put(ConsumerConfig.DEFAULT_ISOLATION_LEVEL, READ_COMMITTED);
+        //props.put(StreamsConfig.CLIENT_ID_CONFIG, "streams-test-case-1");
+        //props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, EXACTLY_ONCE);
+        //props.put(ProducerConfig.ACKS_CONFIG, "all");
+        //props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "streams-test-case");
+        //props.put(ConsumerConfig.DEFAULT_ISOLATION_LEVEL, READ_COMMITTED);
 
         Properties properties = new Properties();
         properties.putAll(props);

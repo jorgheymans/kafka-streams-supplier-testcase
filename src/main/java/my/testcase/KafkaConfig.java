@@ -6,11 +6,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.ValueTransformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +51,7 @@ public class KafkaConfig {
 
     private Topology topology(KafkaStreamsTracing kafkaStreamsTracing) {
         StreamsBuilder sb = new StreamsBuilder();
-        KStream<String, byte[]> stream = sb.stream("supplier-test-case-input");
+        KStream<byte[], byte[]> stream = sb.stream("supplier-test-case-input", Consumed.with(Serdes.ByteArray(), Serdes.ByteArray()));
         stream.transformValues(kafkaStreamsTracing
                 .valueTransformer("filter", new ValueTransformer<byte[], byte[]>() {
 
@@ -62,11 +65,11 @@ public class KafkaConfig {
                     @Override
                     public byte[] transform(byte[] value) {
                         // throws IllegalStateException
-                        try {
-                          context.headers();
-                        }catch (Exception e) {
-                          e.printStackTrace();
-                        }
+                        //try {
+                      context.headers().add("test", "value".getBytes());
+                        //}catch (Exception e) {
+                        //  e.printStackTrace();
+                        //}
                         return null;
                     }
 
@@ -74,15 +77,30 @@ public class KafkaConfig {
                     public void close() {
                     }
                 }))
-                .to("supplier-test-case-output");
+            .transformValues(() -> new ValueTransformer<byte[], String>() {
+              ProcessorContext context;
+              @Override public void init(ProcessorContext processorContext) {
+              context = processorContext;
+              }
+
+              @Override public String transform(byte[] bytes) {
+                Header test = context.headers().lastHeader("test");
+                return new String(test.value());
+              }
+
+              @Override public void close() {
+
+              }
+            })
+                .to("supplier-test-case-output", Produced.with(Serdes.ByteArray(), Serdes.String()));
         return sb.build();
     }
 
     Properties kStreamsConfig() {
         Map<String, Object> props = new HashMap<>();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-test-case-1");
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.ByteArray().getClass().getName());
+        //props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        //props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.ByteArray().getClass().getName());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         //props.put(StreamsConfig.CLIENT_ID_CONFIG, "streams-test-case-1");
         //props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, EXACTLY_ONCE);

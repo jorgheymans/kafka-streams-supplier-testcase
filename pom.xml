@@ -17,7 +17,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <spring.boot.version>2.1.7.RELEASE</spring.boot.version>
         <spring.release.train.version>Greenwich.SR2</spring.release.train.version>
-        <kafka.client.version>2.2.0</kafka.client.version>
+        <kafka.client.version>2.6.3</kafka.client.version>
     </properties>
 
     <dependencyManagement>
